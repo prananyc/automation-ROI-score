@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automation ROI Scorer | Pranavi Jatoo</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0b0f1a; color:#f1f5f9; font-family:'DM Sans',-apple-system,sans-serif; min-height:100vh; }
+    input, select { font-family:inherit; }
+    input::placeholder { color:#475569; }
+
+    .header { padding:20px 28px; border-bottom:1px solid rgba(255,255,255,0.06); }
+    .header-row { display:flex; align-items:center; gap:8px; }
+    .dot { width:8px; height:8px; border-radius:50%; background:#6366f1; box-shadow:0 0 8px rgba(99,102,241,0.5); }
+    .header h1 { font-size:20px; font-weight:800; letter-spacing:-0.02em; }
+    .header p { font-size:12px; color:#64748b; margin:3px 0 0 16px; }
+
+    .main { padding:24px 28px; max-width:1100px; margin:0 auto; }
+
+    .cards { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px; }
+    .card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:18px 20px; }
+    .card-label { font-size:11px; font-weight:500; color:#94a3b8; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:6px; }
+    .card-value { font-size:26px; font-weight:700; font-family:'DM Sans',sans-serif; letter-spacing:-0.02em; }
+
+    .panel { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:24px; margin-bottom:20px; }
+    .panel-title { font-size:16px; font-weight:700; color:#f1f5f9; margin-bottom:4px; }
+    .panel-sub { font-size:12px; color:#64748b; margin-bottom:16px; }
+
+    .toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .btn-add { padding:7px 16px; border-radius:8px; border:1px solid rgba(99,102,241,0.4); background:rgba(99,102,241,0.12); color:#a5b4fc; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .btn-add:hover { background:rgba(99,102,241,0.2); }
+
+    .form-panel { background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.15); border-radius:10px; padding:16px; margin-bottom:16px; display:none; }
+    .form-panel.active { display:block; }
+    .form-grid { display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr auto; gap:8px; align-items:end; }
+    .form-grid label { font-size:10px; color:#94a3b8; display:block; margin-bottom:3px; text-transform:uppercase; letter-spacing:0.04em; }
+    .form-grid input, .form-grid select { width:100%; padding:7px 9px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#f1f5f9; font-size:13px; outline:none; font-family:inherit; }
+    .btn-submit { padding:7px 14px; border-radius:6px; border:none; background:#6366f1; color:#fff; font-size:12px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .btn-submit:hover { background:#4f46e5; }
+
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th { padding:9px 10px; text-align:left; color:#94a3b8; font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.04em; border-bottom:1px solid rgba(255,255,255,0.06); }
+    th.r { text-align:right; }
+    td { padding:9px 10px; border-bottom:1px solid rgba(255,255,255,0.03); }
+
+    .rank { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:6px; font-size:12px; font-weight:700; }
+    .r1 { background:#22c55e; color:#fff; }
+    .r2 { background:rgba(34,197,94,0.2); color:#22c55e; }
+    .rn { background:rgba(255,255,255,0.06); color:#94a3b8; }
+
+    .cx { padding:2px 8px; border-radius:4px; font-size:11px; font-weight:500; }
+    .cxL { background:rgba(34,197,94,0.12); color:#22c55e; }
+    .cxM { background:rgba(245,158,11,0.12); color:#f59e0b; }
+    .cxH { background:rgba(239,68,68,0.12); color:#ef4444; }
+
+    .sc { font-size:14px; font-weight:800; color:#a5b4fc; padding:3px 10px; border-radius:6px; }
+    .del { background:none; border:none; color:#475569; cursor:pointer; font-size:16px; line-height:1; }
+    .del:hover { color:#ef4444; }
+
+    .reco { background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.15); border-radius:12px; padding:20px; margin-bottom:20px; }
+    .how { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:20px; }
+
+    .footer { padding:14px 28px; border-top:1px solid rgba(255,255,255,0.06); display:flex; justify-content:space-between; }
+    .footer span { font-size:11px; color:#334155; }
+
+    .overflow-x { overflow-x:auto; }
+
+    @media (max-width:768px) {
+      .cards { grid-template-columns:repeat(2,1fr); }
+      .form-grid { grid-template-columns:1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-row"><div class="dot"></div><h1>Automation ROI Scorer</h1></div>
+    <p>Input your manual processes → get a prioritized automation roadmap with projected savings</p>
+  </div>
+
+  <div class="main">
+    <div class="cards" id="cards"></div>
+
+    <div class="panel">
+      <div class="panel-title">ROI Score by Process</div>
+      <div class="panel-sub">Higher score = higher automation priority</div>
+      <div id="chart"></div>
+    </div>
+
+    <div class="panel">
+      <div class="toolbar">
+        <div>
+          <div class="panel-title">Priority Matrix</div>
+          <div style="font-size:12px;color:#64748b;margin-top:2px">Add your own processes to score them</div>
+        </div>
+        <button class="btn-add" id="toggleBtn">+ Add Process</button>
+      </div>
+
+      <div class="form-panel" id="formPanel">
+        <div class="form-grid">
+          <div><label>Process Name</label><input type="text" id="fName" placeholder="e.g. Weekly status reporting" /></div>
+          <div><label>Hrs/Week</label><input type="number" id="fHrs" placeholder="10" /></div>
+          <div><label>Error Rate %</label><input type="number" id="fErr" placeholder="5" /></div>
+          <div><label>Hourly Cost $</label><input type="number" id="fCost" placeholder="50" /></div>
+          <div><label>Frequency</label><select id="fFreq"><option>Daily</option><option selected>Weekly</option><option>Monthly</option></select></div>
+          <div><label>Complexity</label><select id="fCx"><option>Low</option><option selected>Medium</option><option>High</option></select></div>
+          <button class="btn-submit" id="addBtn">Add</button>
+        </div>
+      </div>
+
+      <div class="overflow-x">
+        <table>
+          <thead><tr><th>Rank</th><th>Process</th><th>Hrs/Wk</th><th>Frequency</th><th>Error %</th><th>Complexity</th><th class="r">Annual Savings</th><th class="r">ROI Score</th><th></th></tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="reco" id="reco"></div>
+
+    <div class="how">
+      <div style="font-size:13px;font-weight:600;color:#94a3b8;margin-bottom:8px">How the scoring works</div>
+      <div style="font-size:12px;color:#64748b;line-height:1.8">
+        <strong style="color:#94a3b8">ROI Score</strong> = ((Annual Cost Saved ÷ 1,000) + Error Impact) × Complexity Discount<br/>
+        <strong style="color:#94a3b8">Annual Cost</strong> = Hrs/week × 52 × Hourly rate<br/>
+        <strong style="color:#94a3b8">Error Impact</strong> = Error rate × Frequency weight (Daily=5, Weekly=1, Monthly=0.25) × 10<br/>
+        <strong style="color:#94a3b8">Complexity</strong> = Low (1.0×) · Medium (0.7×) · High (0.4×) — discounts harder-to-automate processes
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Built by Pranavi Jatoo · Portfolio Project</span>
+    <span>Process Automation Prioritization · ROI Analysis</span>
+  </div>
+
+  <script>
+    var fmt = function(n) { return n>=1e6?'$'+(n/1e6).toFixed(1)+'M':n>=1e3?'$'+(n/1e3).toFixed(0)+'K':'$'+n; };
+    var fmtN = function(n) { return n>=1e6?(n/1e6).toFixed(1)+'M':n>=1e3?(n/1e3).toFixed(0)+'K':''+n; };
+
+    var processes = [
+      {id:1,name:"Monthly invoice reconciliation",hrs:12,freq:"Weekly",err:8,cost:45,cx:"Medium"},
+      {id:2,name:"Lead qualification & routing",hrs:15,freq:"Daily",err:12,cost:55,cx:"Low"},
+      {id:3,name:"Client onboarding checklist",hrs:8,freq:"Weekly",err:5,cost:50,cx:"Medium"},
+      {id:4,name:"Report generation & distribution",hrs:10,freq:"Weekly",err:3,cost:60,cx:"Low"},
+      {id:5,name:"Contract approval workflow",hrs:6,freq:"Daily",err:15,cost:65,cx:"High"},
+      {id:6,name:"Vendor payment processing",hrs:9,freq:"Weekly",err:6,cost:40,cx:"Medium"}
+    ];
+
+    function calcScore(p) {
+      var fm = p.freq==="Daily"?5:p.freq==="Weekly"?1:0.25;
+      var cd = p.cx==="Low"?1:p.cx==="Medium"?0.7:0.4;
+      var aH = p.hrs*52;
+      var aC = aH*p.cost;
+      var sc = Math.round(((aC/1000)+p.err*fm*10)*cd);
+      return {id:p.id,name:p.name,hrs:p.hrs,freq:p.freq,err:p.err,cost:p.cost,cx:p.cx,aH:aH,aC:aC,score:sc};
+    }
+
+    function getScored() {
+      return processes.map(calcScore).sort(function(a,b){return b.score-a.score;});
+    }
+
+    function render() {
+      var scored = getScored();
+      var totC=0, totH=0, top3C=0, top3H=0;
+      for(var i=0;i<scored.length;i++) { totC+=scored[i].aC; totH+=scored[i].aH; if(i<3){top3C+=scored[i].aC; top3H+=scored[i].aH;} }
+      var maxSc = scored.length?scored[0].score:1;
+
+      document.getElementById('cards').innerHTML =
+        '<div class="card"><div class="card-label">Total Annual Savings</div><div class="card-value" style="color:#22c55e">'+fmt(totC)+'</div></div>'+
+        '<div class="card"><div class="card-label">Hours Saved / Year</div><div class="card-value" style="color:#06b6d4">'+fmtN(totH)+' hrs</div></div>'+
+        '<div class="card"><div class="card-label">Processes Analyzed</div><div class="card-value">'+processes.length+'</div></div>'+
+        '<div class="card"><div class="card-label">Top Priority</div><div class="card-value" style="color:#f59e0b;font-size:18px">'+(scored.length?scored[0].name.slice(0,22):'—')+'</div></div>';
+
+      var chartHtml = '';
+      for(var i=0;i<scored.length;i++) {
+        var w = Math.max(3, Math.round((scored[i].score/maxSc)*100));
+        var label = scored[i].name.length>30?scored[i].name.slice(0,30)+'…':scored[i].name;
+        chartHtml += '<div style="display:flex;align-items:center;margin-bottom:8px;height:28px">'+
+          '<div style="width:185px;flex-shrink:0;text-align:right;padding-right:12px;font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+label+'</div>'+
+          '<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:6px;height:22px;overflow:hidden">'+
+          '<div style="width:'+w+'%;height:100%;background:#6366f1;border-radius:0 6px 6px 0;display:flex;align-items:center;padding-left:8px;transition:width 0.4s">'+
+          '<span style="font-size:10px;font-weight:700;color:#fff">'+scored[i].score+'</span></div></div></div>';
+      }
+      document.getElementById('chart').innerHTML = chartHtml;
+
+      var tHtml = '';
+      for(var i=0;i<scored.length;i++) {
+        var p = scored[i];
+        var rc = i===0?'r1':i===1?'r2':'rn';
+        var tr = i===0?' style="background:rgba(34,197,94,0.05)"':i===1?' style="background:rgba(34,197,94,0.02)"':'';
+        var cc = p.cx==='Low'?'cxL':p.cx==='Medium'?'cxM':'cxH';
+        var ec = p.err>=10?'#ef4444':'#cbd5e1';
+        var sb = 'rgba(99,102,241,'+Math.min(p.score/400,0.3)+')';
+        tHtml += '<tr'+tr+'>'+
+          '<td><span class="rank '+rc+'">'+(i+1)+'</span></td>'+
+          '<td style="color:#f1f5f9;font-weight:500">'+p.name+'</td>'+
+          '<td style="color:#cbd5e1">'+p.hrs+'</td>'+
+          '<td style="color:#94a3b8">'+p.freq+'</td>'+
+          '<td style="color:'+ec+'">'+p.err+'%</td>'+
+          '<td><span class="cx '+cc+'">'+p.cx+'</span></td>'+
+          '<td style="text-align:right;color:#22c55e;font-weight:700">'+fmt(p.aC)+'</td>'+
+          '<td style="text-align:right"><span class="sc" style="background:'+sb+'">'+p.score+'</span></td>'+
+          '<td style="text-align:center"><button class="del" onclick="removeProc('+p.id+')">×</button></td></tr>';
+      }
+      document.getElementById('tbody').innerHTML = tHtml;
+
+      document.getElementById('reco').innerHTML =
+        '<div style="font-size:13px;font-weight:600;color:#a5b4fc;margin-bottom:8px">Recommendation</div>'+
+        '<div style="font-size:13px;color:#cbd5e1;line-height:1.7">'+
+        '<strong style="color:#f1f5f9">'+(scored[0]?scored[0].name:'—')+'</strong> ranks highest (score: '+(scored[0]?scored[0].score:0)+') with <strong style="color:#22c55e">'+fmt(scored[0]?scored[0].aC:0)+'/yr</strong> in potential savings. '+
+        'Automating the top 3 processes alone would save <strong style="color:#22c55e">'+fmt(top3C)+'</strong> annually and free up <strong style="color:#06b6d4">'+fmtN(top3H)+' hours</strong>.</div>';
+    }
+
+    function removeProc(id) {
+      processes = processes.filter(function(p){return p.id!==id;});
+      render();
+    }
+
+    document.getElementById('toggleBtn').addEventListener('click', function() {
+      var panel = document.getElementById('formPanel');
+      var active = panel.classList.contains('active');
+      panel.classList.toggle('active');
+      this.textContent = active ? '+ Add Process' : 'Cancel';
+    });
+
+    document.getElementById('addBtn').addEventListener('click', function() {
+      var name = document.getElementById('fName').value.trim();
+      var hrs = parseFloat(document.getElementById('fHrs').value) || 0;
+      if(!name || !hrs) return;
+      processes.push({
+        id: Date.now(),
+        name: name,
+        hrs: hrs,
+        freq: document.getElementById('fFreq').value,
+        err: parseFloat(document.getElementById('fErr').value) || 0,
+        cost: parseFloat(document.getElementById('fCost').value) || 50,
+        cx: document.getElementById('fCx').value
+      });
+      document.getElementById('fName').value = '';
+      document.getElementById('fHrs').value = '';
+      document.getElementById('fErr').value = '';
+      document.getElementById('fCost').value = '';
+      document.getElementById('fFreq').value = 'Weekly';
+      document.getElementById('fCx').value = 'Medium';
+      document.getElementById('formPanel').classList.remove('active');
+      document.getElementById('toggleBtn').textContent = '+ Add Process';
+      render();
+    });
+
+    render();
+  </script>
+</body>
+</html>
