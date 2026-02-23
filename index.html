@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Automation ROI Scorer | Pranavi Jatoo</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.15.0/Recharts.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0b0f1a; color: #f1f5f9; font-family: 'DM Sans', -apple-system, sans-serif; }
+    input, select { font-family: inherit; }
+    input::placeholder { color: #475569; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useMemo } = React;
+    const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
+
+    const fmt = n => n>=1e6?`$${(n/1e6).toFixed(1)}M`:n>=1e3?`$${(n/1e3).toFixed(0)}K`:`$${n}`;
+    const fmtN = n => n>=1e6?`${(n/1e6).toFixed(1)}M`:n>=1e3?`${(n/1e3).toFixed(0)}K`:`${n}`;
+
+    const INIT = [
+      {id:1,name:"Monthly invoice reconciliation",hrs:12,freq:"Weekly",err:8,cost:45,cx:"Medium"},
+      {id:2,name:"Lead qualification & routing",hrs:15,freq:"Daily",err:12,cost:55,cx:"Low"},
+      {id:3,name:"Client onboarding checklist",hrs:8,freq:"Weekly",err:5,cost:50,cx:"Medium"},
+      {id:4,name:"Report generation & distribution",hrs:10,freq:"Weekly",err:3,cost:60,cx:"Low"},
+      {id:5,name:"Contract approval workflow",hrs:6,freq:"Daily",err:15,cost:65,cx:"High"},
+      {id:6,name:"Vendor payment processing",hrs:9,freq:"Weekly",err:6,cost:40,cx:"Medium"},
+    ];
+
+    const Card = ({label,value,suffix="",color}) => (
+      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:12,padding:"18px 20px"}}>
+        <div style={{fontSize:11,fontWeight:500,color:"#94a3b8",letterSpacing:"0.05em",textTransform:"uppercase",marginBottom:6}}>{label}</div>
+        <div style={{fontSize:26,fontWeight:700,color:color||"#f1f5f9",fontFamily:"'DM Sans',sans-serif",letterSpacing:"-0.02em"}}>{value}{suffix}</div>
+      </div>
+    );
+
+    function App() {
+      const [procs,setProcs] = useState(INIT);
+      const [show,setShow] = useState(false);
+      const [nw,setNw] = useState({name:"",hrs:"",freq:"Weekly",err:"",cost:"",cx:"Medium"});
+
+      const scored = useMemo(()=>procs.map(p=>{
+        const fm = p.freq==="Daily"?5:p.freq==="Weekly"?1:0.25;
+        const cd = p.cx==="Low"?1:p.cx==="Medium"?0.7:0.4;
+        const aH = p.hrs*52, aC = aH*p.cost;
+        const score = Math.round(((aC/1000)+p.err*fm*10)*cd);
+        return {...p, aH, aC, score};
+      }).sort((a,b)=>b.score-a.score),[procs]);
+
+      const totC = scored.reduce((s,p)=>s+p.aC,0);
+      const totH = scored.reduce((s,p)=>s+p.aH,0);
+      const top3C = scored.slice(0,3).reduce((s,p)=>s+p.aC,0);
+      const top3H = scored.slice(0,3).reduce((s,p)=>s+p.aH,0);
+
+      const chartData = scored.map(p=>({name:p.name.length>25?p.name.slice(0,25)+"…":p.name,score:p.score}));
+
+      const add = () => {
+        if(!nw.name||!nw.hrs) return;
+        setProcs([...procs,{id:Date.now(),name:nw.name,hrs:+nw.hrs||0,freq:nw.freq,err:+nw.err||0,cost:+nw.cost||50,cx:nw.cx}]);
+        setNw({name:"",hrs:"",freq:"Weekly",err:"",cost:"",cx:"Medium"}); setShow(false);
+      };
+
+      return (
+        <div style={{minHeight:"100vh",background:"#0b0f1a",color:"#f1f5f9",fontFamily:"'DM Sans',-apple-system,sans-serif"}}>
+
+          <div style={{padding:"20px 28px",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:"#6366f1",boxShadow:"0 0 8px rgba(99,102,241,0.5)"}} />
+              <h1 style={{fontSize:20,fontWeight:800,margin:0,letterSpacing:"-0.02em"}}>Automation ROI Scorer</h1>
+            </div>
+            <p style={{fontSize:12,color:"#64748b",margin:"3px 0 0 16px"}}>Input your manual processes → get a prioritized automation roadmap with projected savings</p>
+          </div>
+
+          <div style={{padding:"24px 28px",maxWidth:1100,margin:"0 auto"}}>
+
+            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:24}}>
+              <Card label="Total Annual Savings" value={fmt(totC)} color="#22c55e" />
+              <Card label="Hours Saved / Year" value={fmtN(totH)} suffix=" hrs" color="#06b6d4" />
+              <Card label="Processes Analyzed" value={procs.length} />
+              <Card label="Top Priority" value={scored[0]?.name?.slice(0,20)||"—"} color="#f59e0b" />
+            </div>
+
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:12,padding:24,marginBottom:20}}>
+              <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9",marginBottom:4}}>ROI Score by Process</div>
+              <div style={{fontSize:12,color:"#64748b",marginBottom:16}}>Higher score = higher automation priority</div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={chartData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis type="number" tick={{fill:"#64748b",fontSize:10}} />
+                  <YAxis type="category" dataKey="name" tick={{fill:"#94a3b8",fontSize:10}} width={180} />
+                  <Tooltip contentStyle={{background:"#1e293b",border:"1px solid #334155",borderRadius:8,fontSize:12}} labelStyle={{color:"#f1f5f9"}} />
+                  <Bar dataKey="score" name="ROI Score" fill="#6366f1" radius={[0,6,6,0]} barSize={18} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:12,padding:24,marginBottom:20}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                <div>
+                  <div style={{fontSize:16,fontWeight:700,color:"#f1f5f9"}}>Priority Matrix</div>
+                  <div style={{fontSize:12,color:"#64748b",marginTop:2}}>Add your own processes to score them</div>
+                </div>
+                <button onClick={()=>setShow(!show)} style={{padding:"7px 16px",borderRadius:8,border:"1px solid rgba(99,102,241,0.4)",background:"rgba(99,102,241,0.12)",color:"#a5b4fc",fontSize:12,fontWeight:600,cursor:"pointer"}}>{show?"Cancel":"+ Add Process"}</button>
+              </div>
+
+              {show&&<div style={{background:"rgba(99,102,241,0.06)",border:"1px solid rgba(99,102,241,0.15)",borderRadius:10,padding:16,marginBottom:16}}>
+                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 1fr 1fr auto",gap:8,alignItems:"end"}}>
+                  {[{l:"Process Name",k:"name",t:"text",p:"e.g. Weekly status reporting"},{l:"Hrs/Week",k:"hrs",t:"number",p:"10"},{l:"Error Rate %",k:"err",t:"number",p:"5"},{l:"Hourly Cost $",k:"cost",t:"number",p:"50"}].map(f=>
+                    <div key={f.k}>
+                      <label style={{fontSize:10,color:"#94a3b8",display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.04em"}}>{f.l}</label>
+                      <input type={f.t} placeholder={f.p} value={nw[f.k]} onChange={e=>setNw({...nw,[f.k]:e.target.value})} style={{width:"100%",padding:"7px 9px",borderRadius:6,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.04)",color:"#f1f5f9",fontSize:13,outline:"none",boxSizing:"border-box"}} />
+                    </div>
+                  )}
+                  <div>
+                    <label style={{fontSize:10,color:"#94a3b8",display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.04em"}}>Frequency</label>
+                    <select value={nw.freq} onChange={e=>setNw({...nw,freq:e.target.value})} style={{padding:"7px 9px",borderRadius:6,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.04)",color:"#f1f5f9",fontSize:13,outline:"none"}}>
+                      <option>Daily</option><option>Weekly</option><option>Monthly</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{fontSize:10,color:"#94a3b8",display:"block",marginBottom:3,textTransform:"uppercase",letterSpacing:"0.04em"}}>Complexity</label>
+                    <select value={nw.cx} onChange={e=>setNw({...nw,cx:e.target.value})} style={{padding:"7px 9px",borderRadius:6,border:"1px solid rgba(255,255,255,0.1)",background:"rgba(255,255,255,0.04)",color:"#f1f5f9",fontSize:13,outline:"none"}}>
+                      <option>Low</option><option>Medium</option><option>High</option>
+                    </select>
+                  </div>
+                  <button onClick={add} style={{padding:"7px 14px",borderRadius:6,border:"none",background:"#6366f1",color:"#fff",fontSize:12,fontWeight:600,cursor:"pointer"}}>Add</button>
+                </div>
+              </div>}
+
+              <div style={{overflowX:"auto"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:13,minWidth:800}}>
+                  <thead><tr>
+                    {["Rank","Process","Hrs/Wk","Frequency","Error %","Complexity","Annual Savings","ROI Score",""].map((h,i)=>
+                      <th key={i} style={{padding:"9px 10px",textAlign:i>=6?"right":"left",color:"#94a3b8",fontWeight:600,fontSize:11,textTransform:"uppercase",letterSpacing:"0.04em",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>{h}</th>
+                    )}
+                  </tr></thead>
+                  <tbody>
+                    {scored.map((p,i)=>(
+                      <tr key={p.id} style={{background:i===0?"rgba(34,197,94,0.05)":i===1?"rgba(34,197,94,0.02)":"transparent"}}>
+                        <td style={{padding:"9px 10px",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+                          <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:24,height:24,borderRadius:6,fontSize:12,fontWeight:700,background:i===0?"#22c55e":i===1?"rgba(34,197,94,0.2)":"rgba(255,255,255,0.06)",color:i===0?"#fff":i===1?"#22c55e":"#94a3b8"}}>{i+1}</span>
+                        </td>
+                        <td style={{padding:"9px 10px",color:"#f1f5f9",fontWeight:500,borderBottom:"1px solid rgba(255,255,255,0.03)"}}>{p.name}</td>
+                        <td style={{padding:"9px 10px",color:"#cbd5e1",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>{p.hrs}</td>
+                        <td style={{padding:"9px 10px",color:"#94a3b8",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>{p.freq}</td>
+                        <td style={{padding:"9px 10px",color:p.err>=10?"#ef4444":"#cbd5e1",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>{p.err}%</td>
+                        <td style={{padding:"9px 10px",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+                          <span style={{padding:"2px 8px",borderRadius:4,fontSize:11,fontWeight:500,background:p.cx==="Low"?"rgba(34,197,94,0.12)":p.cx==="Medium"?"rgba(245,158,11,0.12)":"rgba(239,68,68,0.12)",color:p.cx==="Low"?"#22c55e":p.cx==="Medium"?"#f59e0b":"#ef4444"}}>{p.cx}</span>
+                        </td>
+                        <td style={{padding:"9px 10px",textAlign:"right",color:"#22c55e",fontWeight:700,borderBottom:"1px solid rgba(255,255,255,0.03)"}}>{fmt(p.aC)}</td>
+                        <td style={{padding:"9px 10px",textAlign:"right",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+                          <span style={{fontSize:14,fontWeight:800,color:"#a5b4fc",padding:"3px 10px",borderRadius:6,background:`rgba(99,102,241,${Math.min(p.score/400,0.3)})`}}>{p.score}</span>
+                        </td>
+                        <td style={{padding:"9px 10px",textAlign:"center",borderBottom:"1px solid rgba(255,255,255,0.03)"}}>
+                          <button onClick={()=>setProcs(procs.filter(x=>x.id!==p.id))} style={{background:"none",border:"none",color:"#475569",cursor:"pointer",fontSize:16,lineHeight:1}}>×</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={{background:"rgba(99,102,241,0.06)",border:"1px solid rgba(99,102,241,0.15)",borderRadius:12,padding:20,marginBottom:20}}>
+              <div style={{fontSize:13,fontWeight:600,color:"#a5b4fc",marginBottom:8}}>Recommendation</div>
+              <div style={{fontSize:13,color:"#cbd5e1",lineHeight:1.7}}>
+                <strong style={{color:"#f1f5f9"}}>{scored[0]?.name}</strong> ranks highest (score: {scored[0]?.score}) with <strong style={{color:"#22c55e"}}>{fmt(scored[0]?.aC||0)}/yr</strong> in potential savings. Automating the top 3 processes alone would save <strong style={{color:"#22c55e"}}>{fmt(top3C)}</strong> annually and free up <strong style={{color:"#06b6d4"}}>{fmtN(top3H)} hours</strong>.
+              </div>
+            </div>
+
+            <div style={{background:"rgba(255,255,255,0.02)",border:"1px solid rgba(255,255,255,0.06)",borderRadius:12,padding:20}}>
+              <div style={{fontSize:13,fontWeight:600,color:"#94a3b8",marginBottom:8}}>How the scoring works</div>
+              <div style={{fontSize:12,color:"#64748b",lineHeight:1.8}}>
+                <strong style={{color:"#94a3b8"}}>ROI Score</strong> = ((Annual Cost Saved ÷ 1,000) + Error Impact) × Complexity Discount<br/>
+                <strong style={{color:"#94a3b8"}}>Annual Cost</strong> = Hrs/week × 52 × Hourly rate<br/>
+                <strong style={{color:"#94a3b8"}}>Error Impact</strong> = Error rate × Frequency weight (Daily=5, Weekly=1, Monthly=0.25) × 10<br/>
+                <strong style={{color:"#94a3b8"}}>Complexity</strong> = Low (1.0×) · Medium (0.7×) · High (0.4×) — discounts harder-to-automate processes
+              </div>
+            </div>
+          </div>
+
+          <div style={{padding:"14px 28px",borderTop:"1px solid rgba(255,255,255,0.06)",display:"flex",justifyContent:"space-between"}}>
+            <span style={{fontSize:11,color:"#334155"}}>Built by Pranavi Jatoo · Portfolio Project</span>
+            <span style={{fontSize:11,color:"#334155"}}>Process Automation Prioritization · ROI Analysis</span>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
